@@ -1,7 +1,18 @@
 import httpx
 import logging
+import sys
+import os
 
-logger = logging.getLogger(__name__)
+def get_log_level():
+    HIVE_AGENT_LOG_LEVEL = os.getenv('HIVE_AGENT_LOG_LEVEL', 'INFO').upper() # Check for env variable on the server and default to INFO if none is provided
+    return getattr(logging, HIVE_AGENT_LOG_LEVEL, logging.INFO)    
+
+logging.basicConfig(stream=sys.stdout, level=get_log_level())
+logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
+
+logger = logging.getLogger()
+logger.setLevel(get_log_level())
+
 
 
 async def create_entry(http_client: httpx.AsyncClient, base_url: str, namespace: str, data: dict) -> dict:
@@ -23,7 +34,7 @@ async def create_entry(http_client: httpx.AsyncClient, base_url: str, namespace:
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to create entry in {namespace}: {e}")
+        logging.error(f"Failed to create entry in {namespace}: {e}")
         raise Exception(f"Failed to create entry in {namespace}: {e.response.text}") from e
 
 
@@ -48,10 +59,10 @@ async def stream_entry(http_client: httpx.AsyncClient, base_url: str, namespace:
                     response = await ws.receive_json()
                     yield response
             except httpx.WebSocketException as e:
-                logger.error(f"WebSocket communication error in namespace {namespace}: {e}")
+                logging.error(f"WebSocket communication error in namespace {namespace}: {e}")
                 raise RuntimeError(f"WebSocket communication error in namespace {namespace}") from e
     except httpx.RequestError as e:
-        logger.error(f"Request error while establishing WebSocket connection to {url}: {e}")
+        logging.error(f"Request error while establishing WebSocket connection to {url}: {e}")
         raise RuntimeError(f"Failed to establish WebSocket connection to {url}") from e
 
 
@@ -73,7 +84,7 @@ async def get_entries(http_client: httpx.AsyncClient, base_url: str, namespace: 
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to get entries from {namespace}: {e}")
+        logging.error(f"Failed to get entries from {namespace}: {e}")
         raise Exception(f"Failed to get entries from {namespace}: {e.response.text}") from e
 
 
@@ -96,7 +107,7 @@ async def get_entry_by_id(http_client: httpx.AsyncClient, base_url: str, namespa
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to get entry {entry_id} from {namespace}: {e}")
+        logging.error(f"Failed to get entry {entry_id} from {namespace}: {e}")
         raise Exception(f"Failed to get entry {entry_id} from {namespace}: {e.response.text}") from e
 
 
@@ -120,7 +131,7 @@ async def update_entry(http_client: httpx.AsyncClient, base_url: str, namespace:
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to update entry {entry_id} in {namespace}: {e}")
+        logging.error(f"Failed to update entry {entry_id} in {namespace}: {e}")
         raise Exception(f"Failed to update entry {entry_id} in {namespace}: {e.response.text}") from e
 
 
@@ -143,5 +154,5 @@ async def delete_entry(http_client: httpx.AsyncClient, base_url: str, namespace:
         response.raise_for_status()
         return response.json()
     except httpx.HTTPStatusError as e:
-        logger.error(f"Failed to delete entry {entry_id} from {namespace}: {e}")
+        logging.error(f"Failed to delete entry {entry_id} from {namespace}: {e}")
         raise Exception(f"Failed to delete entry {entry_id} from {namespace}: {e.response.text}") from e

@@ -1,9 +1,9 @@
 import httpx
 import pytest
 
-
 from unittest.mock import AsyncMock
-from hive_agent_client.chat import send_chat_message
+from hive_agent_client.chat.chat import send_chat_message
+
 
 
 @pytest.mark.asyncio
@@ -47,8 +47,11 @@ async def test_send_chat_message_http_error():
     base_url = "http://example.com"
     content = "Hello, how are you?"
 
+    
     with pytest.raises(Exception, match="HTTP error occurred when sending message to the chat API: 400 - Bad request"):
         await send_chat_message(mock_client, base_url, content)
+    
+    
 
 
 @pytest.mark.asyncio
